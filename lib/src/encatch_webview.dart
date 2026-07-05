@@ -201,6 +201,14 @@ class _EncatchFormOverlayState extends State<_EncatchFormOverlay>
     ).animate(_entranceController);
 
     _dismissSub = Encatch.onDismissForm.listen((_) => _handleClose());
+
+    // Match RN: fade backdrop + animate card in immediately on showForm so the
+    // skeleton is visible while the WebView boots — not after form:ready.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pos = _effectivePosition(MediaQuery.sizeOf(context).width);
+      _runEntranceAnimation(pos);
+    });
   }
 
   @override
@@ -328,9 +336,7 @@ class _EncatchFormOverlayState extends State<_EncatchFormOverlay>
 
   void _handleBridgeReady() {
     if (!mounted) return;
-    final pos = _effectivePosition(MediaQuery.sizeOf(context).width);
     setState(() => _webViewReady = true);
-    _runEntranceAnimation(pos);
   }
 
   void _handleBridgeHeightChange(double h) {
@@ -421,13 +427,11 @@ class _EncatchFormOverlayState extends State<_EncatchFormOverlay>
         animation: _entranceController,
         builder: (context, child) {
           return Opacity(
-            opacity: _webViewReady ? _fadeAnimation.value : 1.0,
+            opacity: _fadeAnimation.value,
             child: Container(
               width: double.infinity,
               height: double.infinity,
-              color: _webViewReady
-                  ? modalOverlayBackgroundColor
-                  : Colors.transparent,
+              color: modalOverlayBackgroundColor,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
