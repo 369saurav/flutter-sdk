@@ -315,4 +315,106 @@ void main() {
       );
     });
   });
+
+  group('inApp layout helpers', () {
+    test('resolveInAppSizeFromFormConfig reads inApp.size', () {
+      expect(
+        resolveInAppSizeFromFormConfig({
+          'inApp': {'size': 'compact'},
+          'featureSettings': {'inAppSize': 'spacious'},
+        }),
+        InAppSize.compact,
+      );
+    });
+
+    test('resolveSelectedPositionFromFormConfig prefers inApp.position', () {
+      expect(
+        resolveSelectedPositionFromFormConfig({
+          'inApp': {'position': 'full-center'},
+          'selectedPosition': 'middle-center',
+        }),
+        'full-center',
+      );
+    });
+
+    test('normalizePosition collapses left/right on mobile', () {
+      expect(normalizePosition('top-left', 390), 'top-center');
+      expect(normalizePosition('full-center', 390), 'full-center');
+      expect(normalizePosition('top-left', 800), 'top-left');
+    });
+
+    test('resolveInAppMaxWidthPx uses centered presets', () {
+      expect(
+        resolveInAppMaxWidthPx(
+          InAppSize.compact,
+          'middle-center',
+          1200,
+        ),
+        480,
+      );
+      expect(
+        resolveInAppMaxWidthPx(
+          InAppSize.spacious,
+          'full-center',
+          1200,
+        ),
+        1200,
+      );
+    });
+
+    test('resolveInAppMaxWidthPx uses corner presets', () {
+      expect(
+        resolveInAppMaxWidthPx(
+          InAppSize.standard,
+          'bottom-right',
+          1200,
+        ),
+        400,
+      );
+    });
+
+    test('resolveMaxHeightFractionFromFormConfig reads inApp.maxHeightPercent', () {
+      expect(
+        resolveMaxHeightFractionFromFormConfig({
+          'inApp': {'maxHeightPercent': 65},
+          'featureSettings': {'maxDialogHeightPercentInApp': 80},
+        }),
+        0.65,
+      );
+    });
+
+    test('resolveMaxDialogHeightPx uses viewport fraction only', () {
+      expect(
+        resolveMaxDialogHeightPx(
+          position: 'middle-center',
+          usableHeightPx: 800,
+          maxHeightFraction: 0.8,
+        ),
+        640,
+      );
+    });
+
+    test('resolveMaxDialogHeightPx uses 95% when keyboard is open', () {
+      expect(
+        resolveMaxDialogHeightPx(
+          position: 'middle-center',
+          usableHeightPx: 800,
+          maxHeightFraction: 0.8,
+          keyboardVisible: true,
+        ),
+        760,
+      );
+    });
+
+    test('resolveMaxDialogHeightPx full-center uses full usable height', () {
+      expect(
+        resolveMaxDialogHeightPx(
+          position: 'full-center',
+          usableHeightPx: 750,
+          maxHeightFraction: 0.8,
+        ),
+        750,
+      );
+    });
+  });
 }

@@ -258,6 +258,134 @@ BorderRadius getInlineBorderRadii({CornerStyle corners = CornerStyle.soft}) {
   return BorderRadius.circular(resolveCornerRadiusPx(corners));
 }
 
+/// In-app content width preset — matches web-form-engine-core and iframe-manager.
+enum InAppSize { compact, standard, spacious }
+
+/// Matches iframe-manager mobile breakpoint (window.innerWidth < 600).
+const int inAppMobileBreakpointPx = 600;
+
+/// Reads inApp.size with legacy featureSettings.inAppSize fallback.
+InAppSize resolveInAppSizeFromFormConfig(
+  Map<String, dynamic>? appearanceProperties,
+) {
+  final inApp = appearanceProperties?['inApp'] as Map<String, dynamic>?;
+  final featureSettings =
+      appearanceProperties?['featureSettings'] as Map<String, dynamic>?;
+  final value =
+      inApp?['size'] as String? ?? featureSettings?['inAppSize'] as String?;
+  switch (value) {
+    case 'compact':
+      return InAppSize.compact;
+    case 'spacious':
+      return InAppSize.spacious;
+    default:
+      return InAppSize.standard;
+  }
+}
+
+/// Reads inApp.position with legacy selectedPosition fallback.
+String resolveSelectedPositionFromFormConfig(
+  Map<String, dynamic>? appearanceProperties,
+) {
+  final inApp = appearanceProperties?['inApp'] as Map<String, dynamic>?;
+  return (inApp?['position'] as String?) ??
+      (appearanceProperties?['selectedPosition'] as String?) ??
+      'middle-center';
+}
+
+bool isMobileLayout(double screenWidth) =>
+    screenWidth < inAppMobileBreakpointPx;
+
+/// Collapse left/right anchors to center on mobile — matches iframe-manager.
+String normalizePosition(String position, double screenWidth) {
+  if (position == 'full-center' || position == 'full') return 'full-center';
+  if (!isMobileLayout(screenWidth)) return position;
+  if (position.startsWith('top')) return 'top-center';
+  if (position.startsWith('bottom')) return 'bottom-center';
+  return 'middle-center';
+}
+
+bool isCenterAlignedPosition(String position) =>
+    position.endsWith('-center') || position == 'center';
+
+/// Popup shell max-width — aligned with iframe-manager getInAppMaxWidth().
+double resolveInAppMaxWidthPx(
+  InAppSize size,
+  String position,
+  double screenWidth, {
+  double horizontalInsetPx = 0,
+}) {
+  final available = (screenWidth - horizontalInsetPx * 2).clamp(100.0, double.infinity);
+  if (position == 'full-center') return available;
+
+  final centered = isCenterAlignedPosition(position);
+  final presetWidth = centered
+      ? switch (size) {
+          InAppSize.compact => 480.0,
+          InAppSize.spacious => 720.0,
+          InAppSize.standard => 600.0,
+        }
+      : switch (size) {
+          InAppSize.compact => 320.0,
+          InAppSize.spacious => 500.0,
+          InAppSize.standard => 400.0,
+        };
+
+  return presetWidth < available ? presetWidth : available;
+}
+
+/// Reads inApp.maxHeightPercent with legacy featureSettings.maxDialogHeightPercentInApp fallback.
+double resolveMaxHeightFractionFromFormConfig(
+  Map<String, dynamic>? appearanceProperties,
+) {
+  final inApp = appearanceProperties?['inApp'] as Map<String, dynamic>?;
+  final featureSettings =
+      appearanceProperties?['featureSettings'] as Map<String, dynamic>?;
+  final raw =
+      inApp?['maxHeightPercent'] ?? featureSettings?['maxDialogHeightPercentInApp'];
+  if (raw is num) return (raw.toDouble() / 100.0).clamp(0.1, 1.0);
+  return 0.8;
+}
+
+/// Modal shell max-height — aligned with iframe-manager and RN EncatchWebView.
+/// Height is capped by viewport × maxHeightPercent only (inAppSize affects width, not height).
+double resolveMaxDialogHeightPx({
+  required String position,
+  required double usableHeightPx,
+  required double maxHeightFraction,
+  bool keyboardVisible = false,
+  bool useTallMaxHeight = false,
+}) {
+  if (position == 'full-center') return usableHeightPx;
+  if (keyboardVisible || useTallMaxHeight) return usableHeightPx * 0.95;
+  return usableHeightPx * maxHeightFraction;
+}
+
+typedef PositionAlignment = ({
+  MainAxisAlignment main,
+  CrossAxisAlignment cross,
+});
+
+/// Flexbox alignment for modal position — matches RN getPositionLayout().
+PositionAlignment getPositionAlignment(String position) {
+  var main = MainAxisAlignment.center;
+  var cross = CrossAxisAlignment.center;
+
+  if (position.startsWith('top')) {
+    main = MainAxisAlignment.start;
+  } else if (position.startsWith('bottom')) {
+    main = MainAxisAlignment.end;
+  }
+
+  if (position.endsWith('left')) {
+    cross = CrossAxisAlignment.start;
+  } else if (position.endsWith('right')) {
+    cross = CrossAxisAlignment.end;
+  }
+
+  return (main: main, cross: cross);
+}
+
 // ============================================================================
 // Native color parser
 // ============================================================================
