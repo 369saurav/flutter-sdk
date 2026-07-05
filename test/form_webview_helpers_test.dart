@@ -255,4 +255,64 @@ void main() {
       expect(theme.backgroundColor, const Color(0xFF112233));
     });
   });
+
+  group('corner helpers', () {
+    Map<String, dynamic> appearanceProperties({String? appearanceCorners, String? legacyCorners}) {
+      return {
+        if (appearanceCorners != null)
+          'appearance': {'corners': appearanceCorners},
+        if (legacyCorners != null)
+          'featureSettings': {'corners': legacyCorners},
+      };
+    }
+
+    test('resolveCornersFromFormConfig prefers appearance.appearance.corners', () {
+      expect(
+        resolveCornersFromFormConfig(
+          appearanceProperties(
+            appearanceCorners: 'round',
+            legacyCorners: 'sharp',
+          ),
+        ),
+        CornerStyle.round,
+      );
+    });
+
+    test('resolveCornersFromFormConfig falls back to featureSettings.corners', () {
+      expect(
+        resolveCornersFromFormConfig(appearanceProperties(legacyCorners: 'sharp')),
+        CornerStyle.sharp,
+      );
+    });
+
+    test('resolveCornerRadiusPx maps presets', () {
+      expect(resolveCornerRadiusPx(CornerStyle.sharp), 2);
+      expect(resolveCornerRadiusPx(CornerStyle.soft), 10);
+      expect(resolveCornerRadiusPx(CornerStyle.round), 16);
+    });
+
+    test('getBorderRadii zeros screen-touching corners for top-left', () {
+      final radius = getBorderRadii('top-left', corners: CornerStyle.soft);
+      expect(radius.topLeft, Radius.zero);
+      expect(radius.topRight, Radius.zero);
+      expect(radius.bottomLeft, Radius.zero);
+      expect(radius.bottomRight, const Radius.circular(10));
+    });
+
+    test('getBorderRadii is zero for full-center', () {
+      expect(getBorderRadii('full-center', corners: CornerStyle.round), BorderRadius.zero);
+    });
+
+    test('getBorderRadii rounds all corners for middle-center', () {
+      final radius = getBorderRadii('middle-center', corners: CornerStyle.round);
+      expect(radius, BorderRadius.circular(16));
+    });
+
+    test('getInlineBorderRadii uses uniform preset radius', () {
+      expect(
+        getInlineBorderRadii(corners: CornerStyle.sharp),
+        BorderRadius.circular(2),
+      );
+    });
+  });
 }

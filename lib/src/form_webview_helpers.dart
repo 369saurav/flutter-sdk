@@ -191,6 +191,74 @@ Color resolveBackgroundColor(
 }
 
 // ============================================================================
+// Corner / layout helpers (modal + inline) — mirrors RN form-webview-helpers.ts
+// ============================================================================
+
+/// Corner roundness preset — matches web-form-engine-core and iframe-manager.
+enum CornerStyle { sharp, soft, round }
+
+/// Maps corners preset to logical pixels (16px = 1rem), aligned with App.svelte.
+double resolveCornerRadiusPx(CornerStyle corners) {
+  switch (corners) {
+    case CornerStyle.sharp:
+      return 2;
+    case CornerStyle.round:
+      return 16;
+    case CornerStyle.soft:
+      return 10;
+  }
+}
+
+/// Reads appearance.appearance.corners with legacy featureSettings.corners fallback.
+CornerStyle resolveCornersFromFormConfig(
+  Map<String, dynamic>? appearanceProperties,
+) {
+  final appearance =
+      appearanceProperties?['appearance'] as Map<String, dynamic>?;
+  final featureSettings =
+      appearanceProperties?['featureSettings'] as Map<String, dynamic>?;
+  final value =
+      appearance?['corners'] as String? ??
+      featureSettings?['corners'] as String?;
+  switch (value) {
+    case 'sharp':
+      return CornerStyle.sharp;
+    case 'round':
+      return CornerStyle.round;
+    default:
+      return CornerStyle.soft;
+  }
+}
+
+/// Per-corner radii for the modal shell. Screen-touching edges stay square (0).
+BorderRadius getBorderRadii(
+  String position, {
+  CornerStyle corners = CornerStyle.soft,
+}) {
+  if (position == 'full-center' || position == 'full') {
+    return BorderRadius.zero;
+  }
+
+  final radius = Radius.circular(resolveCornerRadiusPx(corners));
+  final touchesTop = position.contains('top');
+  final touchesBottom = position.contains('bottom');
+  final touchesLeft = position.endsWith('left');
+  final touchesRight = position.endsWith('right');
+
+  return BorderRadius.only(
+    topLeft: touchesTop || touchesLeft ? Radius.zero : radius,
+    topRight: touchesTop || touchesRight ? Radius.zero : radius,
+    bottomLeft: touchesBottom || touchesLeft ? Radius.zero : radius,
+    bottomRight: touchesBottom || touchesRight ? Radius.zero : radius,
+  );
+}
+
+/// Uniform radii for inline embeds — matches web-sdk iframe-manager inline shell.
+BorderRadius getInlineBorderRadii({CornerStyle corners = CornerStyle.soft}) {
+  return BorderRadius.circular(resolveCornerRadiusPx(corners));
+}
+
+// ============================================================================
 // Native color parser
 // ============================================================================
 

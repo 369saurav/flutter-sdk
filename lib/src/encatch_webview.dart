@@ -64,17 +64,6 @@ Color _parseHexColor(String hex, {double opacity = 0.3}) {
   return (main: main, cross: cross);
 }
 
-BorderRadius _getBorderRadius(String position) {
-  final hasTop = position.contains('top');
-  final hasBottom = position.contains('bottom');
-  return BorderRadius.only(
-    topLeft: hasTop ? Radius.zero : const Radius.circular(20),
-    topRight: hasTop ? Radius.zero : const Radius.circular(20),
-    bottomLeft: hasBottom ? Radius.zero : const Radius.circular(20),
-    bottomRight: hasBottom ? Radius.zero : const Radius.circular(20),
-  );
-}
-
 double _calcMaxWidth(double screenWidth) {
   if (screenWidth < 600) return screenWidth;
   if (screenWidth < 1200) return screenWidth * 0.5;
@@ -404,7 +393,10 @@ class _EncatchFormOverlayState extends State<_EncatchFormOverlay>
     final maxWidth = _calcMaxWidth(screenSize.width);
     final pos = _position;
     final alignment = _getPositionAlignment(pos);
-    final borderRadius = _getBorderRadius(pos);
+    final corners = resolveCornersFromFormConfig(
+      widget.payload.formConfig.appearanceProperties,
+    );
+    final borderRadius = getBorderRadii(pos, corners: corners);
     final formTheme = resolveFormWebViewTheme(
       widget.payload,
       systemBrightness: MediaQuery.platformBrightnessOf(context),
