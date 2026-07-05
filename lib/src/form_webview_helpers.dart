@@ -387,6 +387,94 @@ PositionAlignment getPositionAlignment(String position) {
 }
 
 // ============================================================================
+// Modal overlay / darkOverlay — mirrors RN form-webview-helpers.ts
+// ============================================================================
+
+const Color _defaultOverlayColor = Color.fromARGB(128, 0, 0, 0); // rgba(0,0,0,0.5)
+const double _overlayFallbackAlpha = 0.4;
+
+/// Reads inApp.darkOverlay with legacy featureSettings.darkOverlay fallback.
+bool resolveDarkOverlayFromFormConfig(
+  Map<String, dynamic>? appearanceProperties,
+) {
+  final inApp = appearanceProperties?['inApp'] as Map<String, dynamic>?;
+  final featureSettings =
+      appearanceProperties?['featureSettings'] as Map<String, dynamic>?;
+  return (inApp?['darkOverlay'] ?? featureSettings?['darkOverlay']) == true;
+}
+
+/// Overlay base color from theme JSON — aligned with shareable encatch.ts.
+String getOverlayColorFromTheme(Map<String, dynamic>? themeConfig) {
+  if (themeConfig == null) return 'rgba(0, 0, 0, 0.5)';
+
+  final overlayColor = themeConfig['overlayColor'];
+  if (overlayColor is String && overlayColor.isNotEmpty) {
+    return overlayColor;
+  }
+
+  final themeJson = themeConfig['theme'];
+  if (themeJson == null || themeJson == '{}' || themeJson == '') {
+    return 'rgba(0, 0, 0, 0.5)';
+  }
+
+  try {
+    final vars = jsonDecode(themeJson as String) as Map<String, dynamic>;
+    final color = vars['overlayColor'] ??
+        vars['--encatch-overlay-color'] ??
+        vars['--overlay'] ??
+        vars['--popover'];
+    if (color is String && color.isNotEmpty) return color;
+  } catch (_) {
+    // fall through
+  }
+  return 'rgba(0, 0, 0, 0.5)';
+}
+
+/// Parses overlay color strings into [Color], preserving explicit alpha when set.
+Color? parseOverlayColorWithAlpha(
+  String color, {
+  double fallbackAlpha = _overlayFallbackAlpha,
+}) {
+  final parsed = _tryParseRgbColor(color.trim());
+  if (parsed != null) return parsed;
+
+  final rgbOnly = RegExp(
+    r'^rgb\s*\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\)$',
+    caseSensitive: false,
+  ).firstMatch(color.trim());
+  if (rgbOnly != null) {
+    final r = _parseRgbChannel(rgbOnly.group(1));
+    final g = _parseRgbChannel(rgbOnly.group(2));
+    final b = _parseRgbChannel(rgbOnly.group(3));
+    if (r != null && g != null && b != null) {
+      return Color.fromARGB(
+        (_overlayFallbackAlpha * 255).round(),
+        r,
+        g,
+        b,
+      );
+    }
+  }
+
+  return _tryParseColor(color, opacity: fallbackAlpha);
+}
+
+/// Modal backdrop color when darkOverlay is enabled; transparent when disabled.
+Color resolveModalOverlayBackgroundColor({
+  required Map<String, dynamic>? appearanceProperties,
+  required Brightness activeMode,
+  required bool darkOverlay,
+}) {
+  if (!darkOverlay) return Colors.transparent;
+
+  final themes = appearanceProperties?['themes'] as Map<String, dynamic>?;
+  final modeKey = activeMode == Brightness.dark ? 'dark' : 'light';
+  final themeConfig = themes?[modeKey] as Map<String, dynamic>?;
+  final base = getOverlayColorFromTheme(themeConfig);
+  return parseOverlayColorWithAlpha(base) ?? _defaultOverlayColor;
+}
+
+// ============================================================================
 // Native color parser
 // ============================================================================
 

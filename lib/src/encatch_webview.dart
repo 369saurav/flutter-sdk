@@ -17,30 +17,8 @@ import 'encatch.dart';
 import 'encatch_form_webview_bridge.dart';
 import 'form_webview_helpers.dart';
 import 'form_webview_skeleton.dart';
+import 'modal_backdrop_blur.dart';
 import 'types.dart';
-
-// ============================================================================
-// Layout helpers (modal-only)
-// ============================================================================
-
-Color _parseHexColor(String hex, {double opacity = 0.3}) {
-  var h = hex.replaceAll('#', '');
-  if (h.length == 3) h = h.split('').map((c) => '$c$c').join();
-  if (h.length == 8) {
-    final a = int.tryParse(h.substring(0, 2), radix: 16) ?? 0;
-    final r = int.tryParse(h.substring(2, 4), radix: 16) ?? 0;
-    final g = int.tryParse(h.substring(4, 6), radix: 16) ?? 0;
-    final b = int.tryParse(h.substring(6, 8), radix: 16) ?? 0;
-    return Color.fromARGB(a, r, g, b);
-  }
-  if (h.length == 6) {
-    final r = int.tryParse(h.substring(0, 2), radix: 16) ?? 0;
-    final g = int.tryParse(h.substring(2, 4), radix: 16) ?? 0;
-    final b = int.tryParse(h.substring(4, 6), radix: 16) ?? 0;
-    return Color.fromARGB((opacity * 255).round(), r, g, b);
-  }
-  return Colors.black.withValues(alpha: opacity);
-}
 
 // ============================================================================
 // EncatchWebView — headless listener widget
@@ -412,10 +390,11 @@ class _EncatchFormOverlayState extends State<_EncatchFormOverlay>
       debugLabel: 'EncatchWebView',
     );
     final backgroundColor = formTheme.backgroundColor;
-    final overlayColor = _parseHexColor(
-      (appearanceProperties?['themes']?['dark']?['overlayColor'] as String?) ??
-          '#000000',
-      opacity: 0.3,
+    final darkOverlay = resolveDarkOverlayFromFormConfig(appearanceProperties);
+    final modalOverlayBackgroundColor = resolveModalOverlayBackgroundColor(
+      appearanceProperties: appearanceProperties,
+      activeMode: formTheme.activeMode,
+      darkOverlay: darkOverlay,
     );
     final usesScaleAnimation = isCenterAlignedPosition(effectivePosition);
     final shellPadding = EdgeInsets.only(
@@ -446,42 +425,52 @@ class _EncatchFormOverlayState extends State<_EncatchFormOverlay>
             child: Container(
               width: double.infinity,
               height: double.infinity,
-              color: _webViewReady ? overlayColor : Colors.transparent,
-              child: Padding(
-                padding: shellPadding,
-                child: Column(
-                  mainAxisAlignment:
-                      _isFullCenter ? MainAxisAlignment.start : alignment.main,
-                  crossAxisAlignment: _isFullCenter
-                      ? CrossAxisAlignment.stretch
-                      : alignment.cross,
-                  children: [
-                    if (_isFullCenter)
-                      Expanded(
-                        child: _buildPopup(
-                          popupWidth: popupWidth,
-                          maxHeight: maxHeight,
-                          forcedHeight: forcedHeight,
-                          borderRadius: borderRadius,
-                          backgroundColor: backgroundColor,
-                          usesScaleAnimation: usesScaleAnimation,
-                          usesFixedViewportHeight: true,
-                          skeletonMode: skeletonMode,
-                        ),
-                      )
-                    else
-                      _buildPopup(
-                        popupWidth: popupWidth,
-                        maxHeight: maxHeight,
-                        forcedHeight: forcedHeight,
-                        borderRadius: borderRadius,
-                        backgroundColor: backgroundColor,
-                        usesScaleAnimation: usesScaleAnimation,
-                        usesFixedViewportHeight: usesFixedViewportHeight,
-                        skeletonMode: skeletonMode,
-                      ),
-                  ],
-                ),
+              color: _webViewReady
+                  ? modalOverlayBackgroundColor
+                  : Colors.transparent,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (!darkOverlay)
+                    ModalBackdropBlur(activeMode: formTheme.activeMode),
+                  Padding(
+                    padding: shellPadding,
+                    child: Column(
+                      mainAxisAlignment: _isFullCenter
+                          ? MainAxisAlignment.start
+                          : alignment.main,
+                      crossAxisAlignment: _isFullCenter
+                          ? CrossAxisAlignment.stretch
+                          : alignment.cross,
+                      children: [
+                        if (_isFullCenter)
+                          Expanded(
+                            child: _buildPopup(
+                              popupWidth: popupWidth,
+                              maxHeight: maxHeight,
+                              forcedHeight: forcedHeight,
+                              borderRadius: borderRadius,
+                              backgroundColor: backgroundColor,
+                              usesScaleAnimation: usesScaleAnimation,
+                              usesFixedViewportHeight: true,
+                              skeletonMode: skeletonMode,
+                            ),
+                          )
+                        else
+                          _buildPopup(
+                            popupWidth: popupWidth,
+                            maxHeight: maxHeight,
+                            forcedHeight: forcedHeight,
+                            borderRadius: borderRadius,
+                            backgroundColor: backgroundColor,
+                            usesScaleAnimation: usesScaleAnimation,
+                            usesFixedViewportHeight: usesFixedViewportHeight,
+                            skeletonMode: skeletonMode,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           );

@@ -417,4 +417,55 @@ void main() {
       );
     });
   });
+
+  group('modal overlay helpers', () {
+    test('resolveDarkOverlayFromFormConfig prefers inApp.darkOverlay', () {
+      expect(
+        resolveDarkOverlayFromFormConfig({
+          'inApp': {'darkOverlay': true},
+          'featureSettings': {'darkOverlay': false},
+        }),
+        isTrue,
+      );
+      expect(
+        resolveDarkOverlayFromFormConfig({
+          'featureSettings': {'darkOverlay': false},
+        }),
+        isFalse,
+      );
+    });
+
+    test('resolveModalOverlayBackgroundColor is transparent when darkOverlay off', () {
+      expect(
+        resolveModalOverlayBackgroundColor(
+          appearanceProperties: const {},
+          activeMode: Brightness.light,
+          darkOverlay: false,
+        ),
+        Colors.transparent,
+      );
+    });
+
+    test('resolveModalOverlayBackgroundColor uses theme overlayColor', () {
+      final color = resolveModalOverlayBackgroundColor(
+        appearanceProperties: {
+          'themes': {
+            'light': {'overlayColor': '#112233'},
+          },
+        },
+        activeMode: Brightness.light,
+        darkOverlay: true,
+      );
+      expect(color, const Color(0x66112233));
+    });
+
+    test('getOverlayColorFromTheme reads overlayColor from theme JSON vars', () {
+      expect(
+        getOverlayColorFromTheme({
+          'theme': '{"--overlay":"#445566"}',
+        }),
+        '#445566',
+      );
+    });
+  });
 }
