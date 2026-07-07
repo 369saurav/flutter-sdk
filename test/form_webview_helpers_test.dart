@@ -288,7 +288,7 @@ void main() {
     test('resolveCornerRadiusPx maps presets', () {
       expect(resolveCornerRadiusPx(CornerStyle.sharp), 2);
       expect(resolveCornerRadiusPx(CornerStyle.soft), 10);
-      expect(resolveCornerRadiusPx(CornerStyle.round), 16);
+      expect(resolveCornerRadiusPx(CornerStyle.round), 24);
     });
 
     test('getBorderRadii zeros screen-touching corners for top-left', () {
@@ -305,7 +305,7 @@ void main() {
 
     test('getBorderRadii rounds all corners for middle-center', () {
       final radius = getBorderRadii('middle-center', corners: CornerStyle.round);
-      expect(radius, BorderRadius.circular(16));
+      expect(radius, BorderRadius.circular(24));
     });
 
     test('getInlineBorderRadii uses uniform preset radius', () {

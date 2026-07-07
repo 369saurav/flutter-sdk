@@ -203,7 +203,7 @@ double resolveCornerRadiusPx(CornerStyle corners) {
     case CornerStyle.sharp:
       return 2;
     case CornerStyle.round:
-      return 16;
+      return 24;
     case CornerStyle.soft:
       return 10;
   }
