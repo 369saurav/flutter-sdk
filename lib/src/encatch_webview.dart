@@ -527,17 +527,26 @@ class _EncatchFormOverlayState extends State<_EncatchFormOverlay>
                     : _heightAnimation.value
                         .clamp(0.0, maxHeight)
                         .toDouble();
-                return ClipRRect(
-                  borderRadius: borderRadius,
-                  clipBehavior: Clip.hardEdge,
-                  child: ColoredBox(
-                    color: backgroundColor,
-                    child: SizedBox(
-                      width: popupWidth,
-                      height: popupHeight,
-                      child: _buildPopupContent(
-                        backgroundColor: backgroundColor,
-                        skeletonMode: skeletonMode,
+                // The drop shadow lives on this outer DecoratedBox so it isn't
+                // cut off by the ClipRRect below, which clips the rounded
+                // corners of the actual popup content.
+                return DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: borderRadius,
+                    boxShadow: getModalPopupShadowStyle(),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: borderRadius,
+                    clipBehavior: Clip.hardEdge,
+                    child: ColoredBox(
+                      color: backgroundColor,
+                      child: SizedBox(
+                        width: popupWidth,
+                        height: popupHeight,
+                        child: _buildPopupContent(
+                          backgroundColor: backgroundColor,
+                          skeletonMode: skeletonMode,
+                        ),
                       ),
                     ),
                   ),

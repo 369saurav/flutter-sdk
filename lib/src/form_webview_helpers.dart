@@ -361,6 +361,22 @@ double resolveMaxDialogHeightPx({
   return usableHeightPx * maxHeightFraction;
 }
 
+/// Modal popup drop shadow — mirrors RN getModalPopupShadowStyle().
+///
+/// Must be applied to an outer, unclipped shell around the popup card (the
+/// rounded-corner content itself is rendered in a separate `ClipRRect`,
+/// since clipping a widget also clips away any shadow drawn on it).
+/// Not used for the full-center position, matching RN's behavior.
+List<BoxShadow> getModalPopupShadowStyle() {
+  return [
+    BoxShadow(
+      color: Color.fromARGB((0.3 * 255).round(), 0, 0, 0),
+      offset: const Offset(0, 20),
+      blurRadius: 60,
+    ),
+  ];
+}
+
 typedef PositionAlignment = ({
   MainAxisAlignment main,
   CrossAxisAlignment cross,
